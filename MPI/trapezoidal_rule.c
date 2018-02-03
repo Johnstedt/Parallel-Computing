@@ -20,7 +20,12 @@ int main(void) {
 	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
 	h = (b-a)/n; /* h is the same for all processes */
-	local_n = n/comm_sz; /* So is the number of trapezoids */
+
+	if((n % comm_sz) > my_rank){
+		local_n = n/comm_sz + 1; /* So is the number of trapezoids */
+	} else {
+		local_n = n/comm_sz;
+	}
 
 	local_a = a + my_rank*local_n*h;
 	local_b = local_a + local_n*h;
