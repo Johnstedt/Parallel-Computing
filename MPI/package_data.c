@@ -45,34 +45,33 @@ int main(void) {
 
 void send_vector(int x, int y, int rows, int columns, int* matrix, int send_to){
 
-	int count = columns;
-	int blocklenght = rows;
-	int stride = 6;
+	int pack_buf[100];
+	int position = 0;
+	for(int yi = 0; yi < rows; yi++){
+		for(int xi = 0; xi < columns; xi++){
+			MPI_Pack(&matrix[(x+xi)*6 + y+yi], 1, MPI_INT, pack_buf, 100, &position, MPI_COMM_WORLD);
+		}
+	}
 
-	MPI_Datatype new_type;
-	MPI_Type_vector(count, blocklenght, stride, MPI_INT, &new_type);
-	MPI_Type_commit(&new_type);
-
-	MPI_Send(&matrix[(x*6) + y], 1, new_type, send_to, 0, MPI_COMM_WORLD);	
+	MPI_Send(pack_buf, 100, MPI_PACKED, send_to, 0, MPI_COMM_WORLD);	
 }
 
 int* receive_vector(int x, int y, int rows, int columns, int* matrix, int receive_from){
 
-	int count = columns;
-	int blocklenght = rows;
-	int stride = 6;
+	int pack_buf[100];
 
-	MPI_Datatype new_type;
-	MPI_Type_vector(count, blocklenght, stride, MPI_INT, &new_type);
-	MPI_Type_commit(&new_type);
+	MPI_Recv(pack_buf, 100, MPI_PACKED, receive_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);	
 
-	MPI_Recv(&matrix[(x*6) + y], 1, new_type, receive_from, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);	
-
-	int *new_matrix = malloc(x*y * sizeof(*new_matrix));
+	int position = 0;
+	for(int yi = 0; yi < rows; yi++){
+		for(int xi = 0; xi < columns; xi++){
+			MPI_Unpack(pack_buf, 100, &position, &matrix[(x+xi)*6 + y+yi], 1, MPI_INT, MPI_COMM_WORLD);
+		}
+	}
+	int *new_matrix = malloc(rows*columns * sizeof(*new_matrix));
 	for(int i = 0; i < columns; i++){
 		for(int j = 0; j < rows; j++){
 			new_matrix[(i*rows)+j] = matrix[((x+i)*6) + y + j];
-	//	printf(" %d ", new_matrix[i]);
 		}
 	}
 	return new_matrix;

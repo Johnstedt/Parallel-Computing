@@ -19,12 +19,6 @@ int main(void) {
 
 	MPI_Scan(&data , &result, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 	
-	/*if(my_rank == (comm_sz-1)){
-		printf("%d\n", result);
-	}*/
-	
-	//series = malloc(comm_sz * sizeof(*series));
-
 	MPI_Gather(&result, 1, MPI_INT, series, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 	if(my_rank == 0){
