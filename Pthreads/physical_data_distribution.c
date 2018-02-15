@@ -14,6 +14,8 @@ struct global_context {
 //  Context  private  to one  thread.
 struct local_context {
 	struct global_context *global;
+	int *pointer_to_rows[MAX_THREADS];
+	int *pointer_to_blocks[]
 	int id;
 };
 void *func(void *arg) {
