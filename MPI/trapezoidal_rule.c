@@ -21,14 +21,17 @@ int main(void) {
 
 	h = (b-a)/n; /* h is the same for all processes */
 
+	int offset;
 	if((n % comm_sz) > my_rank){
 		local_n = n/comm_sz + 1; /* So is the number of trapezoids */
-	} else {
+		offset = 0;
+	}else {
 		local_n = n/comm_sz;
+		offset = (n % comm_sz);
 	}
 
-	local_a = a + my_rank*local_n*h;
-	local_b = local_a + local_n*h;
+	local_a = a + my_rank * (local_n) * h + (offset * h);
+	local_b = local_a + local_n * h;
 	local_int = Trap(local_a, local_b, local_n, h);
 
 	if (my_rank != 0) {
@@ -42,7 +45,12 @@ int main(void) {
 			total_int += local_int;
 		}
 	}
+
+		printf("thread %d trapezoids, our a=%f and b= %f and local_n = %d and offset=%d \n", my_rank, local_a, local_b, local_n, offset);
+
+
 	if (my_rank == 0) {
+		printf("h=%f\n", h);
 		printf("With n = %d trapezoids, our estimate\n", n);
 		printf("of the integral from %f to %f = %.15e\n",
 		a, b, total_int);
