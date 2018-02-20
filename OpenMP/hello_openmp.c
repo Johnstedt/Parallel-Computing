@@ -1,10 +1,13 @@
 #include <omp.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-int main(void) 
+int main(int argc, char* argv[]) 
 {
 
-	#pragma omp parallel 
+	int thread_count = strtol(argv[1], NULL, 10);
+
+	#pragma omp parallel num_threads(thread_count)
 	{
 
 		int num_threads = omp_get_num_threads();
