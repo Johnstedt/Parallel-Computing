@@ -85,7 +85,6 @@ int main(void) {
 			printf("%d, ", w[i]);
 		}
 	}
-	
 
 	MPI_Finalize();
 	return 0;

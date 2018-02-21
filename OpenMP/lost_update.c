@@ -31,12 +31,10 @@ int main(int argc, char* argv[])
 		}
 		printf("%d\n", j);
 		global_count[j] = tmp_count;
-
 	}
 
 	//printf("Updating global variable from multiple threads gives %d, should be threads * M \n", global_count[0]);
 	create_histogram(global_count);
-
 }
 
 void create_histogram(int *arr){
