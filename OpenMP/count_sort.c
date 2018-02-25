@@ -1,46 +1,113 @@
 #include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <time.h>
 
 void count_sort_inner(int n, int in[], int out[], int threads);
 void count_sort_outer(int n, int in[], int out[], int threads);
+timeval_diff(struct timeval *difference,
+             struct timeval *end_time,
+             struct timeval *start_time
+            )
+{
+  struct timeval temp_diff;
+
+  if(difference==NULL)
+  {
+    difference=&temp_diff;
+  }
+
+  difference->tv_sec =end_time->tv_sec -start_time->tv_sec ;
+  difference->tv_usec=end_time->tv_usec-start_time->tv_usec;
+
+  /* Using while instead of if below makes the code slightly more robust. */
+
+  while(difference->tv_usec<0)
+  {
+    difference->tv_usec+=1000000;
+    difference->tv_sec -=1;
+  }
+
+  return 1000000LL*difference->tv_sec+
+                   difference->tv_usec;
+
+} /* timeval_diff() */
 
 int main(int argc, char* argv[]) 
 {
 
-	int thread_count = strtol(argv[1], NULL, 10);
 
-	int in[] = {1,3,4,2,2,19,15,899,7623,2,111,5432,13,7,788,56};
-	int out[16];
-	int n = 16;
+	int threads = strtol(argv[1], NULL, 10);
+	int work = strtol(argv[2], NULL, 10);
 
+	struct timeval resultsInner[threads+1][work+1];
+	struct timeval resultsOuter[threads+1][work+1];
 
-	clock_t start = clock(), diff;
+	for(int thread_count = 1; thread_count <= threads; thread_count++){
+		for(int n = 10000; n < work*10000+1; n+=10000){
+			int in[n];
 
-	count_sort_inner(n,in,out, thread_count);
+			for(int i = 0; i < n; i++){
+				in[i] = rand();
+			}
+			int out[n];
 
-	diff = clock() - start;
+			struct timeval start, stop, diff;
 
-	for(int i = 0; i < n; i++){
-		printf(" %d \n", out[i]);
+			
+			gettimeofday(&start, NULL);
+
+			count_sort_inner(n,in,out, thread_count);
+
+			gettimeofday(&stop, NULL);
+
+			//diff = stop.tv_usec - start.tv_usec;
+			timeval_diff(&diff,&stop,&start);
+
+			for(int i = 0; i < n; i++){
+		//		printf(" %d \n", out[i]);
+			}
+
+			
+	//		printf("Time taken %d seconds %d milliseconds \n", msec/1000, msec%1000);
+			resultsInner[thread_count][n/10000] = diff;
+
+			gettimeofday(&start, NULL);
+
+			count_sort_outer(n,in,out, thread_count);
+
+			gettimeofday(&stop, NULL);
+
+			timeval_diff(&diff,&stop,&start);
+
+			for(int i = 0; i < n; i++){
+			//	printf(" %d \n", out[i]);
+			}
+
+	//		printf("Time taken %d seconds %d milliseconds \n", msec/1000, msec%1000);
+			resultsOuter[thread_count][n/10000] = diff;
+		}
+		printf("Did Done it for %d threads\n", thread_count);
 	}
 
-	int msec = diff * 1000 / CLOCKS_PER_SEC;
-	printf("Time taken %d seconds %d milliseconds %d \n", msec/1000, msec%1000, diff);
-
-	start = clock();
-
-	count_sort_outer(n,in,out, thread_count);
-
-	diff = clock() - start;
-
-	for(int i = 0; i < n; i++){
-		printf(" %d \n", out[i]);
+	printf("THIS IS INNER LOOP\n");
+	for(int thread_count = 1; thread_count <= threads; thread_count++){
+		printf("%d", thread_count);
+		for(int n = 10000; n < work*10000+1; n+=10000){
+			printf(" & %ld.%ld ", resultsInner[thread_count][n/10000].tv_sec, resultsInner[thread_count][n/10000].tv_usec/1000%1000);
+		}
+			printf("\n");
 	}
+	printf("THIS IS OUTER LOOP\n");
+	for(int thread_count = 1; thread_count <= threads; thread_count++){
+		printf("%d", thread_count);
+		for(int n = 10000; n < work*10000+1; n+=10000){
+			printf(" & %ld.%ld ", resultsOuter[thread_count][n/10000].tv_sec, resultsOuter[thread_count][n/10000].tv_usec/1000%1000);
 
-	msec = diff * 1000 / CLOCKS_PER_SEC;
-	printf("Time taken %d seconds %d milliseconds %d \n", msec/1000, msec%1000, diff);
+		}
+		printf("\n");
+	}
 
 }
 
@@ -76,3 +143,4 @@ void count_sort_outer(int n, int in[], int out[], int threads)
 		out[count] = x;
 	}
 }
+
