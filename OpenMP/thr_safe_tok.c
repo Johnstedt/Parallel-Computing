@@ -23,19 +23,20 @@ char* safe_strtok(char* str, char* s){
 	char *dest = calloc(length, sizeof(*dest));
 
 	memcpy(dest, str, length);
-	
+
 	char *lasts;
     register int ch;
 
     if (dest == 0)
-	dest = lasts;
+		dest = lasts;
     do {
-	if ((ch = *dest++) == '\0')
+		if ((ch = *dest++) == '\0')
 	    return 0;
     } while (strchr(delim, ch));
+    
     --dest;
     lasts = s + strcspn(dest, delim);
     if (*lasts != 0)
-	*lasts++ = 0;
+		*lasts++ = 0;
     return dest;
 }
