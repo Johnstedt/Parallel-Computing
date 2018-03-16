@@ -136,11 +136,14 @@ void tp_stop(void){
 //Execute work on some worker
 void tp_execute(void (*work)(void*), void *arg){
 	
+	
 	sem_wait(&semaphore);
 	pthread_mutex_lock(&thwrite);
 	global.function = work;
 	global.arguments = arg;
 	pthread_mutex_unlock(&thread);
-
+	
+	pthread_mutex_lock(&condLock);
 	pthread_cond_signal(&cond);
+	pthread_mutex_unlock(&condLock);
 }

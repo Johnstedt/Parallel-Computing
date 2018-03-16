@@ -4,6 +4,11 @@
 
 typedef enum { false, true } bool;
 
+typedef struct position {
+  int colum;
+  int row;
+} position;
+
 #define N 8
 
 int numSol = 0;
@@ -116,16 +121,53 @@ bool solveNQ(int startI, int startJ, int stopI, int StopJ)
     return true;
 }
 
+int calculateSufficientDepth(int threads, int boardSize) {
+
+  if(threads*5 <= ((boardSize/2) + (boardSize % 2))){
+    return 1;
+  } else if (threads*5 <= ((boardSize/2)+(boardSize % 2))*boardSize) {
+    return 2;
+  }
+  else { //depth beyond three is ridiculous in all but the most trivial board sizes.
+    return 3;
+  }
+}
+
+int getProblems(int depth){
+  if(depth == 1){
+    return boardSize/2 + (boardSize % 2);
+  } 
+  else if (depth == 2){
+    return ((boardSize/2)+(boardSize % 2))*boardSize;
+  } 
+  else {
+    return ((boardSize/2)+(boardSize % 2))*boardSize*boardSize;
+  }
+}
+
 int main(int argc, char* argv[]) {
 
 //	int n = strtol(argv[1], NULL, 10);
 
 	int my_rank, comm_sz;
 
+  int requiredDepth = calculateSufficientDepth();
+  int problems = getProblems(requiredDepth);
+
+  position *start = malloc(problems * sizeof(position));
+  position *stop = malloc(problems * sizeof(position));
+
+  for(int i = 1; i <= problems; i++){
+    if(i <= (N/2 + N%2)) {
+      start[i-1].row = 1;
+      start[i-1].colum = i;
+    }
+  }
+
+
 	MPI_Init(NULL, NULL);
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
-
 
   int *gather;
   gather = calloc(N, sizeof(int));
