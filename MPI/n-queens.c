@@ -4,11 +4,6 @@
 
 typedef enum { false, true } bool;
 
-typedef struct position {
-  int colum;
-  int row;
-} position;
-
 #define N 8
 
 int numSol = 0;
@@ -53,12 +48,9 @@ bool isSafe(int board[N][N], int row, int col)
     return true;
 }
  
-/* A recursive utility function to solve N
-   Queen problem */
 bool solveNQUtil(int board[N][N], int col, int stop)
 {
-    /* base case: If all queens are placed
-      then return true */
+
     if (col >= N) {
     	numSol++;
     	//printf("Solution %d\n", numSol);
@@ -85,26 +77,13 @@ bool solveNQUtil(int board[N][N], int col, int stop)
             //if ( solveNQUtil(board, col + 1) )
               //  return true;
  
-            /* If placing queen in board[i][col]
-               doesn't lead to a solution, then
-               remove queen from board[i][col] */
-            board[i][col] = 0; // BACKTRACK
+            board[i][col] = 0; 
         }
     }
 
-     /* If queen can not be place in any row in
-        this colum col  then return false */
     return false;
 }
- 
-/* This function solves the N Queen problem using
-   Backtracking. It mainly uses solveNQUtil() to
-   solve the problem. It returns false if queens
-   cannot be placed, otherwise return true and
-   prints placement of queens in the form of 1s.
-   Please note that there may be more than one
-   solutions, this function prints one  of the
-   feasible solutions.*/
+
 bool solveNQ(int startI, int startJ, int stopI, int StopJ)
 {
     int board[N][N];
@@ -133,15 +112,15 @@ int calculateSufficientDepth(int threads, int boardSize) {
   }
 }
 
-int getProblems(int depth){
+int getProblems(int depth, int boardSize){
   if(depth == 1){
-    return boardSize/2 + (boardSize % 2);
+    return boardSize/2 + (boardSize % 2) ;
   } 
   else if (depth == 2){
-    return ((boardSize/2)+(boardSize % 2))*boardSize;
+    return ((boardSize/2)+(boardSize % 2))*boardSize ;
   } 
   else {
-    return ((boardSize/2)+(boardSize % 2))*boardSize*boardSize;
+    return ((boardSize/2)+(boardSize % 2))*boardSize*boardSize ;
   }
 }
 
@@ -151,19 +130,24 @@ int main(int argc, char* argv[]) {
 
 	int my_rank, comm_sz;
 
-  int requiredDepth = calculateSufficientDepth();
-  int problems = getProblems(requiredDepth);
+  int requiredDepth = calculateSufficientDepth(16, N);
+  int problems = getProblems(requiredDepth, N);
 
-  position *start = malloc(problems * sizeof(position));
-  position *stop = malloc(problems * sizeof(position));
+  int boards[problems][N][N];
 
-  for(int i = 1; i <= problems; i++){
-    if(i <= (N/2 + N%2)) {
-      start[i-1].row = 1;
-      start[i-1].colum = i;
+  int j 
+  for(int i = 0; i < problems; i++){
+    for(int j = (depth-1); j > -1; j--){
+      if(j == 0){
+        i % N
+        boards[i][j][i % N] = 1;
+      }else {
+        boards[i][j][(i / (j*N)) % N] = 1:
+      }   
+
+     
     }
   }
-
 
 	MPI_Init(NULL, NULL);
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
