@@ -48,19 +48,13 @@ bool isSafe(int board[N][N], int row, int col)
     return true;
 }
  
-bool solveNQUtil(int board[N][N], int col, int stopDepth, int stopRow)
+bool solveNQUtil(int board[N][N], int col)
 {
 
     if (col >= N) {
     	numSol++;
-    	//printf("Solution %d\n", numSol);
- 		//printSolution(board);
- 		return true;
+ 		  return true;
     }
-    if(board[stopRow][stopDepth] == 1){
-    	return false;
-    }
-
     /* Consider this column and try placing
        this queen in all rows one by one */
     for (int i = 0; i < N; i++)
@@ -73,7 +67,7 @@ bool solveNQUtil(int board[N][N], int col, int stopDepth, int stopRow)
             board[i][col] = 1;
  
             /* recur to place rest of the queens */
-            solveNQUtil(board, col + 1, stopDepth, stopRow);
+            solveNQUtil(board, col + 1);
             //if ( solveNQUtil(board, col + 1) )
               //  return true;
  
@@ -84,23 +78,10 @@ bool solveNQUtil(int board[N][N], int col, int stopDepth, int stopRow)
     return false;
 }
 
-bool solveNQ(int startBoard[N][N], int depth, int stopBoard[N][N])
+bool solveNQ(int startBoard[N][N], int depth)
 {
-    
-  int findRow;
-  int found = false;
-  int i = 0;
-  while(!found){
-    if(stopBoard[i][depth] == 1){
 
-      found = true;
-      findRow = i;
-
-    }
-  }
-  printf("%d", findRow);
-
- 	solveNQUtil(startBoard, depth, depth, findRow);
+ 	solveNQUtil(startBoard, depth);
     
     return true;
 }
@@ -129,6 +110,16 @@ int getProblems(int depth, int boardSize){
   }
 }
 
+
+int power(int x, int y){
+  int sum = x;
+  for(int i = 0; i < y-1; i++){
+    sum = sum*x;
+  }
+  return sum;
+}
+
+
 int main(int argc, char* argv[]) {
 
 //	int n = strtol(argv[1], NULL, 10);
@@ -139,7 +130,6 @@ int main(int argc, char* argv[]) {
   int problems = getProblems(requiredDepth, N);
 
   int boards[problems][N][N];
-
 
   printf(" Depth %d, Problems %d \n", requiredDepth, problems );
 
@@ -155,19 +145,23 @@ int main(int argc, char* argv[]) {
     for(int j = 0; j < (requiredDepth); j++){
       
       if(j == requiredDepth-1){   
-        boards[i][i % N][j] = 1;
+        if(isSafe(boards[i], (i % N), j)){
+          boards[i][i % N][j] = 1;
+        }
+        else {
+          boards[i][i % N][j] = 1;
+          boards[i][0][0] = -1;
+        }
       } else {
-        boards[i][(i/ ((requiredDepth - 1 - j) * N)) % N][j] = 1;
+
+        if(isSafe(boards[i], (i/ ((requiredDepth - 1 - j) * N) % N), j)){
+          boards[i][(i/ power(N, (requiredDepth -1- j) )) % N][j] = 1;
+        }
+        else {
+          boards[i][(i/ power(N, (requiredDepth -1- j) )) % N][j] = 1;
+          boards[i][0][0] = -1;
+        }
       }   
-        
-        
-        //boards[i][i % N][j] = 1;
-
-      //}else {
-      //  int imint = (i / (j*N));
-       // printf("%d\n",imint );
-        
-
          
     }
   }
@@ -187,8 +181,6 @@ int main(int argc, char* argv[]) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
-  printf("HELLO?\n");
-
 
   int *gather;
   gather = calloc(N, sizeof(int));
@@ -201,61 +193,73 @@ int main(int argc, char* argv[]) {
 
   MPI_Status stat;
   if(my_rank != 0){
+    bool quit = false;
     
-    int someval = 0;
-    //MPI_Sendrecv(&someval, 1, MPI_INT, 0, 1, recvbuf, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+    while(!quit) {
+      int someval = 0;
 
-    MPI_Send(&someval, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+      MPI_Send(&someval, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 
-    //Also suppose that process r calls MPI Recv with
-    MPI_Recv(recvbuf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &stat);
+      //Also suppose that process r calls MPI Recv with
+      MPI_Recv(recvbuf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &stat);
 
-//    printf("MY RANK IS %d, and I received %d\n", my_rank, *recvbuf);
-    solveNQ(boards[my_rank], requiredDepth, boards[my_rank+1]);
+      if(*recvbuf == -1){
+        
+        quit = true;
+      } else if ( *recvbuf == (problems -1) ){
+        solveNQ(boards[*recvbuf], requiredDepth);
+        
+      }
+      else {
+        if(boards[*recvbuf][0][0] != -1){
+          solveNQ(boards[*recvbuf], requiredDepth);
+        }
+        
+      }
+    }
     printf("MY THREAD NO %d I HAVE %d SOLUTIONS\n", my_rank, numSol);
 
   } else {
     
-    int someotherval = 98;
-    int i = 7;
-    while(i > 0){
+    int problem = 0;
+    while(problem < problems){
+
       MPI_Recv(recvbuf, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
     
       // answer to process `stat.MPI_SOURCE` using `someotherval` as tag
-      MPI_Send(&someotherval, 1, MPI_INT, stat.MPI_SOURCE, 0, MPI_COMM_WORLD);
-      i--;
+      MPI_Send(&problem, 1, MPI_INT, stat.MPI_SOURCE, 0, MPI_COMM_WORLD);
+      
+      problem++;
     }
+
+    int shutup = 0;
+    int shutit = -1;
+    while(shutup < N-1){
+      MPI_Recv(recvbuf, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+    
+      // answer to process `stat.MPI_SOURCE` using `someotherval` as tag
+      MPI_Send(&shutit, 1, MPI_INT, stat.MPI_SOURCE, 0, MPI_COMM_WORLD);
+
+      shutup++;
+    }
+    printf("Done them shutups\n");
+
   }
+
+  apointer[0] = numSol;
+
+  MPI_Reduce(apointer, gather, N, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+  if(my_rank == 0){
+
+    printf("TOTAL SOLUTIONS %d\n", *gather*2);
+
+  }
+  free(gather);
+  free(apointer);
+
 
   MPI_Finalize(); 
   return 0;
 
-/*
-	if(comm_sz == N){
-		if(my_rank == N-1){
-      solveNQ(my_rank, 0, 0, N);
-    }else {		
-      solveNQ(my_rank, 0, my_rank + 1, N);
-    }
-	}
-
-	printf("MY THREAD NO %d I HAVE %d SOLUTIONS\n", my_rank, numSol);
-	
-
-	apointer[0] = numSol;
-
-	MPI_Reduce(apointer, gather, N, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-
-	if(my_rank == 0){
-
-		printf("TOTAL SOLUTIONS %d\n", *gather);
-
-	}
-	free(gather);
-  free(apointer);
-
-  MPI_Finalize(); 
-	return 0;*/
 }
-
-// 2 * 2 - (N-2*3)
