@@ -135,14 +135,14 @@ int main(int argc, char* argv[]) {
 
   int boards[problems][N][N];
 
-  int j 
+  int j;
   for(int i = 0; i < problems; i++){
-    for(int j = (depth-1); j > -1; j--){
+    for(int j = (requiredDepth-1); j > -1; j--){
       if(j == 0){
-        i % N
+        i % N;
         boards[i][j][i % N] = 1;
       }else {
-        boards[i][j][(i / (j*N)) % N] = 1:
+        boards[i][j][(i / (j*N)) % N] = 1;
       }   
 
      
@@ -152,6 +152,42 @@ int main(int argc, char* argv[]) {
 	MPI_Init(NULL, NULL);
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+  printf("HELLO?\n");
+
+  int *recvbuf;
+  recvbuf = calloc(1, sizeof(int));
+
+  MPI_Status stat;
+  if(my_rank != 0){
+    printf("IM NOT SLAVE IN A WORLD OF MASTERS\n");
+    int someval = 0;
+    //MPI_Sendrecv(&someval, 1, MPI_INT, 0, 1, recvbuf, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+
+
+    MPI_Send(&someval, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+
+    //Also suppose that process r calls MPI Recv with
+    MPI_Recv(recvbuf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &stat);
+
+    printf("MY RANK IS %d, and I received %d\n", my_rank, *recvbuf);
+
+
+  } else {
+    printf("IM SLAVE IN A WORLD OF MASTERS\n");
+    int someotherval = 98;
+    int i = 3;
+    while(i > 0){
+      MPI_Recv(recvbuf, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+      printf("MY RANK IS %d, and I received %d from %d \n", my_rank, *recvbuf, stat.MPI_SOURCE);
+      // answer to process `stat.MPI_SOURCE` using `someotherval` as tag
+      MPI_Send(&someotherval, 1, MPI_INT, stat.MPI_SOURCE, 0, MPI_COMM_WORLD);
+      i--;
+    }
+  }
+
+  MPI_Finalize(); 
+  return 0;
 
   int *gather;
   gather = calloc(N, sizeof(int));
