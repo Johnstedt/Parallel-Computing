@@ -2,14 +2,17 @@
 #include <stdlib.h>
 #include <mpi.h>
 
+#define N n
 typedef enum { false, true } bool;
 
-#define N 8
+//#define N 8
+
+int n;
 
 int numSol = 0;
  
-/* A utility function to print solution */
-void printSolution(int board[N][N])
+
+void printSolution(int board[][N])
 {
     for (int i = 0; i < N; i++)
     {
@@ -20,12 +23,7 @@ void printSolution(int board[N][N])
     printf("\n");
 }
  
-/* A utility function to check if a queen can
-   be placed on board[row][col]. Note that this
-   function is called when "col" queens are
-   already placed in columns from 0 to col -1.
-   So we need to check only left side for
-   attacking queens */
+
 bool isSafe(int board[N][N], int row, int col)
 {
     int i, j;
@@ -52,23 +50,34 @@ bool solveNQUtil(int board[N][N], int col)
 {
 
     if (col >= N) {
+      if(N % 2 == 1){
+        if(board[N/2][0] == 0 ){
+          numSol++;  
+        }
+        else {
+          printf("ODD SOLUTION\n");
+        }
+      } else {
+        numSol++;
+      }
     	numSol++;
+
+      printSolution(board);
+
  		  return true;
     }
-    /* Consider this column and try placing
-       this queen in all rows one by one */
+
     for (int i = 0; i < N; i++)
     {
-        /* Check if queen can be placed on
-          board[i][col] */
+
         if ( isSafe(board, i, col) )
         {
-            /* Place this queen in board[i][col] */
+
             board[i][col] = 1;
  
             /* recur to place rest of the queens */
             solveNQUtil(board, col + 1);
-            //if ( solveNQUtil(board, col + 1) )
+            //if ( solveNQUtil(board, col + 1) ) // SEQUENTIAL
               //  return true;
  
             board[i][col] = 0; 
@@ -103,13 +112,12 @@ int getProblems(int depth, int boardSize){
     return boardSize/2 + (boardSize % 2) ;
   } 
   else if (depth == 2){
-    return ((boardSize/2)+(boardSize % 2))*boardSize ;
+    return ((boardSize/2)+(boardSize % 2))*boardSize;
   } 
   else {
-    return ((boardSize/2)+(boardSize % 2))*boardSize*boardSize ;
+    return ((boardSize/2)+(boardSize % 2))*boardSize*boardSize;
   }
 }
-
 
 int power(int x, int y){
   int sum = x;
@@ -119,14 +127,19 @@ int power(int x, int y){
   return sum;
 }
 
-
 int main(int argc, char* argv[]) {
 
-//	int n = strtol(argv[1], NULL, 10);
 
-	int my_rank, comm_sz;
+  int my_rank, comm_sz;
 
-  int requiredDepth = calculateSufficientDepth(8, N);
+	MPI_Init(NULL, NULL);
+	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+
+
+  n = strtol(argv[1], NULL, 10);
+
+  int requiredDepth = calculateSufficientDepth(comm_sz, N);
   int problems = getProblems(requiredDepth, N);
 
   int boards[problems][N][N];
@@ -137,9 +150,9 @@ int main(int argc, char* argv[]) {
     for(int j = 0; j < N; j++){
       for(int k = 0; k < N; k++){
         boards[i][j][k] = 0;
+      }
     }
   }
-}
 
   for(int i = 0; i < problems; i++){
     for(int j = 0; j < (requiredDepth); j++){
@@ -166,20 +179,11 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  for(int i = 0; i < problems; i++){
-      for(int j = 0; j < N; j++){
-        for(int k = 0; k < N; k++){
-          
-          printf("%d ", boards[i][j][k]);
-        }
-        printf("\n");
-      }
-      printf("\n\n");
+/*  for(int i = 0; i < problems; i++){
+      printSolution(boards[i]);
   }
+*/
 
-	MPI_Init(NULL, NULL);
-	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
 
   int *gather;
@@ -206,7 +210,7 @@ int main(int argc, char* argv[]) {
       if(*recvbuf == -1){
         
         quit = true;
-      } else if ( *recvbuf == (problems -1) ){
+      } else if ( *recvbuf == (problems -1) && boards[*recvbuf][0][0] != -1){
         solveNQ(boards[*recvbuf], requiredDepth);
         
       }
@@ -234,7 +238,7 @@ int main(int argc, char* argv[]) {
 
     int shutup = 0;
     int shutit = -1;
-    while(shutup < N-1){
+    while(shutup < comm_sz-1){
       MPI_Recv(recvbuf, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
     
       // answer to process `stat.MPI_SOURCE` using `someotherval` as tag
@@ -242,7 +246,7 @@ int main(int argc, char* argv[]) {
 
       shutup++;
     }
-    printf("Done them shutups\n");
+    
 
   }
 
@@ -252,7 +256,7 @@ int main(int argc, char* argv[]) {
 
   if(my_rank == 0){
 
-    printf("TOTAL SOLUTIONS %d\n", *gather*2);
+    printf("TOTAL SOLUTIONS %d\n", *gather);
 
   }
   free(gather);
@@ -261,5 +265,4 @@ int main(int argc, char* argv[]) {
 
   MPI_Finalize(); 
   return 0;
-
 }
