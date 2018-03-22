@@ -1,9 +1,6 @@
+#include "n-queens.h" 
 
-#include "n_queens.h" 
-
-int n;
-
-int numSol = 0;
+int numSol = 0; 
 
 void printSolution(int board[][N])
 {
@@ -48,14 +45,14 @@ bool solveNQUtil(int board[N][N], int col)
           numSol++;  
         }
         else {
-          printf("ODD SOLUTION\n");
+         // printf("ODD SOLUTION\n");
         }
       } else {
         numSol++;
       }
     	numSol++;
 
-      printSolution(board);
+      //printSolution(board);
 
  		  return true;
     }
@@ -121,7 +118,6 @@ int power(int x, int y){
 }
 
 int n_queens(int boardSize) {
-
 
   int my_rank, comm_sz;
 
