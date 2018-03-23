@@ -39,33 +39,30 @@ bool isSafe(int board[N][N], int row, int col)
 bool solveNQUtil(int board[N][N], int col)
 {
 
+    // Count each solution twice exept for middle row if odd board
     if (col >= N) {
       if(N % 2 == 1){
         if(board[N/2][0] == 0 ){
           numSol++;  
-        }
-        else {
-         // printf("ODD SOLUTION\n");
         }
       } else {
         numSol++;
       }
     	numSol++;
 
-      //printSolution(board);
-
  		  return true;
     }
 
+    //Place queen for each row in column
     for (int i = 0; i < N; i++)
     {
-
+        // if legit placement
         if ( isSafe(board, i, col) )
         {
-
+            //place queen
             board[i][col] = 1;
  
-            /* recur to place rest of the queens */
+            // recur to place queen next column
             solveNQUtil(board, col + 1);
             //if ( solveNQUtil(board, col + 1) ) // SEQUENTIAL
               //  return true;
@@ -167,13 +164,6 @@ int n_queens(int boardSize) {
          
     }
   }
-
-/*  for(int i = 0; i < problems; i++){
-      printSolution(boards[i]);
-  }
-*/
-
-
 
   int *gather;
   gather = calloc(N, sizeof(int));
