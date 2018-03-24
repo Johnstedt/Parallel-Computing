@@ -36,7 +36,7 @@ bool isSafe(int board[N][N], int row, int col)
     return true;
 }
  
-bool solveNQUtil(int board[N][N], int col)
+bool recursiveQueenPlacement(int board[N][N], int col)
 {
 
     // Count each solution twice exept for middle row if odd board
@@ -48,6 +48,7 @@ bool solveNQUtil(int board[N][N], int col)
       } else {
         numSol++;
       }
+
     	numSol++;
 
  		  return true;
@@ -63,23 +64,13 @@ bool solveNQUtil(int board[N][N], int col)
             board[i][col] = 1;
  
             // recur to place queen next column
-            solveNQUtil(board, col + 1);
-            //if ( solveNQUtil(board, col + 1) ) // SEQUENTIAL
-              //  return true;
+            recursiveQueenPlacement(board, col + 1);
  
             board[i][col] = 0; 
         }
     }
 
     return false;
-}
-
-bool solveNQ(int startBoard[N][N], int depth)
-{
-
- 	solveNQUtil(startBoard, depth);
-    
-    return true;
 }
 
 int calculateSufficientDepth(int threads, int boardSize) {
@@ -106,7 +97,8 @@ int getProblems(int depth, int boardSize){
   }
 }
 
-int power(int x, int y){
+int power(int x, int y)
+{
   int sum = x;
   for(int i = 0; i < y-1; i++){
     sum = sum*x;
@@ -114,7 +106,8 @@ int power(int x, int y){
   return sum;
 }
 
-int n_queens(int boardSize) {
+
+int main(int argc, char* argv[]) {
 
   int my_rank, comm_sz;
 
@@ -122,15 +115,14 @@ int n_queens(int boardSize) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
-
-  n = boardSize;
+  n = strtol(argv[1], NULL, 10);;
 
   int requiredDepth = calculateSufficientDepth(comm_sz, N);
   int problems = getProblems(requiredDepth, N);
 
   int boards[problems][N][N];
 
-  printf(" Depth %d, Problems %d \n", requiredDepth, problems );
+  //printf(" Depth %d, Problems %d \n", requiredDepth, problems );
 
   for(int i = 0; i < problems; i++){
     for(int j = 0; j < N; j++){
@@ -143,20 +135,25 @@ int n_queens(int boardSize) {
   for(int i = 0; i < problems; i++){
     for(int j = 0; j < (requiredDepth); j++){
       
-      if(j == requiredDepth-1){   
-        if(isSafe(boards[i], (i % N), j)){
+      if(j == requiredDepth-1)
+      {   
+        if(isSafe(boards[i], (i % N), j))
+        {
           boards[i][i % N][j] = 1;
         }
-        else {
+        else 
+        {
           boards[i][i % N][j] = 1;
           boards[i][0][0] = -1;
         }
-      } else {
+      } else 
+      {
 
         if(isSafe(boards[i], (i/ ((requiredDepth - 1 - j) * N) % N), j)){
           boards[i][(i/ power(N, (requiredDepth -1- j) )) % N][j] = 1;
         }
-        else {
+        else 
+        {
           boards[i][(i/ power(N, (requiredDepth -1- j) )) % N][j] = 1;
           boards[i][0][0] = -1;
         }
@@ -175,10 +172,12 @@ int n_queens(int boardSize) {
   recvbuf = calloc(1, sizeof(int));
 
   MPI_Status stat;
+
   if(my_rank != 0){
     bool quit = false;
     
-    while(!quit) {
+    while(!quit) 
+    {
       int someval = 0;
 
       MPI_Send(&someval, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
@@ -186,30 +185,34 @@ int n_queens(int boardSize) {
       //Also suppose that process r calls MPI Recv with
       MPI_Recv(recvbuf, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &stat);
 
-      if(*recvbuf == -1){
+      if(*recvbuf == -1)
+      {
         
         quit = true;
       } else if ( *recvbuf == (problems -1) && boards[*recvbuf][0][0] != -1){
-        solveNQ(boards[*recvbuf], requiredDepth);
+        recursiveQueenPlacement(boards[*recvbuf], requiredDepth);
         
       }
-      else {
-        if(boards[*recvbuf][0][0] != -1){
-          solveNQ(boards[*recvbuf], requiredDepth);
+      else 
+      {
+        if(boards[*recvbuf][0][0] != -1)
+        {
+          recursiveQueenPlacement(boards[*recvbuf], requiredDepth);
         }
         
       }
     }
-    printf("MY THREAD NO %d I HAVE %d SOLUTIONS\n", my_rank, numSol);
 
-  } else {
+  } else 
+
+  {
     
     int problem = 0;
     while(problem < problems){
 
       MPI_Recv(recvbuf, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
     
-      // answer to process `stat.MPI_SOURCE` using `someotherval` as tag
+      // answer 
       MPI_Send(&problem, 1, MPI_INT, stat.MPI_SOURCE, 0, MPI_COMM_WORLD);
       
       problem++;
@@ -217,7 +220,8 @@ int n_queens(int boardSize) {
 
     int shutup = 0;
     int shutit = -1;
-    while(shutup < comm_sz-1){
+    while(shutup < comm_sz-1)
+    {
       MPI_Recv(recvbuf, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
     
       // answer to process `stat.MPI_SOURCE` using `someotherval` as tag
@@ -225,7 +229,6 @@ int n_queens(int boardSize) {
 
       shutup++;
     }
-    
 
   }
 
@@ -233,14 +236,12 @@ int n_queens(int boardSize) {
 
   MPI_Reduce(apointer, gather, N, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 
-  if(my_rank == 0){
-
-    printf("TOTAL SOLUTIONS %d\n", *gather);
-
+  if(my_rank == 0)
+  {
+    printf("%d\n", *gather);
   }
   free(gather);
   free(apointer);
-
 
   MPI_Finalize(); 
   return 0;
